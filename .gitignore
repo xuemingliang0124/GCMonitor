@@ -2,8 +2,8 @@
 __pycache__/
 *.py[cod]
 *$py.class
-.conf
-.xlsx
+*.conf
+*.xlsx
 
 # C extensions
 *.so
