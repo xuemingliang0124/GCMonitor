@@ -14,17 +14,17 @@ MONITOR_HISTORY_FILE = 'Result_Monitor.conf'
 CONFIG_FILE = 'Resource_Monitor.conf'
 
 
-class PrepareWidget():
+class WorkspaceSetWidget():
     def __init__(self, master):
         self.master = master
-        self.prep_frame = ttk.LabelFrame(master, text='工作路径设置', width=600)
-        self.prep_frame.pack(side=TOP, pady=10, fill=X)
+        self.prep_frame = ttk.Frame(master, width=600)
+        self.prep_frame.pack(side=TOP, pady=2, fill=X)
         self.path_entry_frame = ttk.Frame(self.prep_frame)
-        self.path_entry_frame.pack(side=TOP, fill=X, padx=10, pady=5)
+        self.path_entry_frame.pack(side=TOP, fill=X, padx=10, pady=2)
         # self.btn_fr = ttk.Frame(self.prep_frame)
         # self.btn_fr.pack(side=TOP, pady=10, fill=X)
         self.ip_list_show_widget = ttk.Frame(self.prep_frame)
-        self.ip_list_show_widget.pack(side=TOP, pady=10, fill=X)
+        self.ip_list_show_widget.pack(side=TOP, pady=2, fill=X)
         self.result_save_path = StringVar()
         self.ip_list = StringVar()
 
@@ -55,11 +55,11 @@ class PrepareWidget():
         ip_list_show_text = Text(self.ip_list_show_widget)
         scroll_bar = ttk.Scrollbar(self.ip_list_show_widget)
         ip_list_show_text.pack(side=LEFT)
-        ip_list_show_text.place(width=400,height=600)
+        ip_list_show_text.place(width=400, height=600)
         scroll_bar.configure(command=ip_list_show_text.yview)
         scroll_bar.pack(side=RIGHT, fill=X)
 
-    def get_iplist_path(self):
+    def get_workspace_path(self):
         return self.result_save_path.get()
 
     def _set_path(self):

@@ -9,9 +9,7 @@ import re
 from jvm_monitor.step_route import StepRoute
 
 from publick_class.threads_control import MyThread
-from jvm_monitor.gui_widgets.prepare_widget import PrepareWidget
-from jvm_monitor.gui_widgets.monitor_operation_frame import MonitorOperationFrame
-from jvm_monitor.gui_widgets.execution_info_frame import ExecutionInfoFrame
+from jvm_monitor.gui_widgets.jvm_main_frame import jvm_main_frame
 from jvm_monitor.log import jvm_monitor_log
 from publick_class import SFTPConfig
 
@@ -92,11 +90,11 @@ class Gui(tkinter.Tk):
         # 控件样式设置
         self.style = ttk.Style()
         # 前置部件框架
-        self.prepare_widget = PrepareWidget(self)
-        # 场景操作部件框架
-        self.monitor_operation_frame = MonitorOperationFrame(self)
-        # 结果展示部件框架
-        self.execute_info_text = ExecutionInfoFrame(self)
+        # self.prepare_widget = PrepareWidget(self)
+        # # 场景操作部件框架
+        # self.monitor_operation_frame = MonitorOperationFrame(self)
+        # # 结果展示部件框架
+        # self.execute_info_text = ExecutionInfoFrame(self)
 
     def creat_monitor_history_result_file(self):
         # 监控执行记录文件创建
@@ -144,16 +142,19 @@ class Gui(tkinter.Tk):
             text.pack(side=tkinter.TOP, anchor=tkinter.NW)
 
     def create_frame(self):
-        # 创建前置工作部件
-        self.prepare_widget.create_prepare_widget()
-        self.prepare_widget.create_ip_list_button_widget()
-        # self.prepare_widget.create_ip_list_show_widget()
-        self.prepare_widget.check_workspace()
-        # 创建场景设置部件
-        self.monitor_operation_frame.create_scene_set_widget()
-        self.monitor_operation_frame.create_monitor_operation_widget(self)
-        # 创建结果展示部件
-        self.execute_info_text.create_execution_info_widget()
+        self.main_frame = jvm_main_frame.JvmMainFrame(self)
+        self.main_frame.create_main_set_widgets(self)
+        self.main_frame.create_operation_log_widgets()
+        # # 创建前置工作部件
+        # self.prepare_widget.create_prepare_widget()
+        # self.prepare_widget.create_ip_list_button_widget()
+        # # self.prepare_widget.create_ip_list_show_widget()
+        # self.prepare_widget.check_workspace()
+        # # 创建场景设置部件
+        # self.monitor_operation_frame.create_scene_set_widget()
+        # self.monitor_operation_frame.create_monitor_operation_widget(self)
+        # # 创建结果展示部件
+        # self.execute_info_text.create_execution_info_widget()
 
     # 读取监控历史记录
     def read_monitor_history(self):
@@ -182,9 +183,9 @@ class Gui(tkinter.Tk):
         MyThread(step_route.execute, (), step).start()
 
 
-
-gui_obj = Gui()
-gui_obj.creat_monitor_history_result_file()
-gui_obj.style_init()
-gui_obj.create_frame()
-gui_obj.mainloop()
+if __name__ == '__main__':
+    gui_obj = Gui()
+    gui_obj.creat_monitor_history_result_file()
+    gui_obj.style_init()
+    gui_obj.create_frame()
+    gui_obj.mainloop()

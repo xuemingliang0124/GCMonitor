@@ -8,7 +8,7 @@ logger = logging.getLogger('JvmMonitor.GUI')
 class ExecutionInfoFrame():
     def __init__(self, master):
         self.master = master
-        self.execution_info_frame = ttk.LabelFrame(self.master, text='执行结果')
+        self.execution_info_frame = ttk.LabelFrame(self.master, text='执行日志')
         self.execution_info_frame.pack(side=TOP, anchor=N, fill=X)
 
     def create_execution_info_widget(self):

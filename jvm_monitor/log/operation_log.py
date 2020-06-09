@@ -19,7 +19,7 @@ def init_config():
                 'LOG':
                     {'LogLevel': 'DEBUG',
                      'FileSize': '2',
-                     'LogPath': 'log/resource_result.log'}}
+                     'LogPath': 'resource_result.log'}}
         for sec, opts in conf.items():
             cf.add_section(sec)
             for opt, value in opts.items():
