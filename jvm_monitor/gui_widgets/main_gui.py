@@ -9,13 +9,13 @@ import re
 from jvm_monitor.step_route import StepRoute
 
 from publick_class.threads_control import MyThread
-from jvm_monitor.gui_widgets.jvm_main_frame import jvm_main_frame
-from jvm_monitor.log import jvm_monitor_log
+from jvm_monitor.gui_widgets.main_frame import main_frame
+from jvm_monitor.log import operation_log
 from publick_class import SFTPConfig
 
-MONITOR_HISTORY_FILE = 'Result_Monitor.conf'
+MONITOR_RECORD = 'MonitorRecord.txt'
 
-jvm_monitor_log.init_config()
+operation_log.init_config()
 VERSION = 'V1.0'
 CREATE_TIME = '2020/06/03'
 AUTHOR = "薛明亮"
@@ -27,23 +27,20 @@ logger = logging.getLogger('JvmMonitor.GUI')
 def syspathcheck(func):
     @wraps(func)
     def wrapped_function(*args, **kwargs):
-        syspath = args[0].prepare_widget.get_iplist_path()
-        if syspath:
-            if os.path.isfile(syspath):
+        ip_info = args[0].get_ip_info().strip()
+
+        workspace_path = args[0].get_workspace_path()
+        if workspace_path:
+            if os.path.isfile(workspace_path):
                 messagebox.showinfo(title='', message='工作路径不应包含文件名，请重新设置！')
-            elif not os.path.exists(syspath):
-                messagebox.showinfo(title='', message='没有找到{syspath}，请检查工作路径设置！'.format(syspath=syspath))
+            elif not os.path.exists(workspace_path):
+                messagebox.showinfo(title='', message='没有找到{syspath}，请检查工作路径设置！'.format(syspath=workspace_path))
+            elif not ip_info:
+                messagebox.showinfo(title='', message='没有配置服务器信息，请检查！')
             else:
-                for i in os.listdir(syspath):
-                    if i == 'iplist.xlsx':
-                        args[0].iplist_path = os.path.join(syspath, i)
-                        args[0].hide_download_widget()
-                        return func(*args, **kwargs)
-                else:
-                    args[0].set_res(
-                        '没有找到"{syspath}/iplist.xlsx",请检查工作路径或先点击生成iplist模板并配置服务器ip信息!\n'.format(syspath=syspath))
+                return func(*args, **kwargs)
         else:
-            messagebox.showinfo(title='', message='请先设置工作路径，用于保存iplist及监控结果等文件')
+            messagebox.showinfo(title='', message='请先设置工作路径，用于保存监控结果等文件')
 
     return wrapped_function
 
@@ -80,8 +77,8 @@ class Gui(tkinter.Tk):
         # 工具标题
         self.title('GC监控_%s' % VERSION)
         # 设置窗口大小并禁用大小调整
-        self.geometry('700x600')
-        # self.resizable(width=False, height=False)
+        # self.geometry('1000x600')
+        self.resizable(width=False, height=False)
         # 菜单栏
         menubar = tkinter.Menu(self)
         # menubar.add_command(label='使用说明', font='14', command=self._instruction)
@@ -89,39 +86,28 @@ class Gui(tkinter.Tk):
         self.configure(menu=menubar)
         # 控件样式设置
         self.style = ttk.Style()
-        # 前置部件框架
-        # self.prepare_widget = PrepareWidget(self)
-        # # 场景操作部件框架
-        # self.monitor_operation_frame = MonitorOperationFrame(self)
-        # # 结果展示部件框架
-        # self.execute_info_text = ExecutionInfoFrame(self)
 
-    def creat_monitor_history_result_file(self):
+    def create_monitor_history_result_file(self):
         # 监控执行记录文件创建
-        if os.path.exists(MONITOR_HISTORY_FILE):
+        if os.path.exists(MONITOR_RECORD):
             pass
         else:
-            config_item = {'TITLE': {'请选择需要下载项目': ':'}}
-            cf = configparser.ConfigParser()
-            for sec, opts in config_item.items():
-                cf.add_section(sec)
-                for opt, value in opts.items():
-                    cf.set(section=sec, option=opt, value=value)
-            with open(MONITOR_HISTORY_FILE, 'w') as f:
-                cf.write(f)
+            tips = "请选择下载项目："
+            with open(MONITOR_RECORD, 'w', encoding="utf8") as f:
+                f.write(tips)
 
     def style_init(self):
-        # self.style.configure("green.TButton", foreground="green", background="green")
         self.style.map("green.TButton",
                        foreground=[("", "green"), ('pressed', 'green2'), ('active', 'green')],
-                       # background=[("", "green"), ('pressed', 'green2'), ('active', 'green')]
                        )
         self.style.map("red.TButton",
                        foreground=[("", "red"), ('pressed', 'red2'), ('active', 'red')],
-                       # background=[("", "red"), ('pressed', 'red2'), ('active', 'red')]
                        )
         self.style.map("blue.TButton",
                        foreground=[("", "blue"), ('pressed', 'blue2'), ('active', 'blue')],
+                       )
+        self.style.map("springgreen.TButton",
+                       foreground=[("", "springgreen"), ('pressed', 'springgreen'), ('active', 'springgreen')],
                        )
 
     def _version(self):
@@ -142,19 +128,17 @@ class Gui(tkinter.Tk):
             text.pack(side=tkinter.TOP, anchor=tkinter.NW)
 
     def create_frame(self):
-        self.main_frame = jvm_main_frame.JvmMainFrame(self)
+        outside_frame = ttk.Frame(self)
+        outside_frame.pack(padx=10, ipady=10)
+        self.main_frame = main_frame.MainFrame(outside_frame)
         self.main_frame.create_main_set_widgets(self)
         self.main_frame.create_operation_log_widgets()
-        # # 创建前置工作部件
-        # self.prepare_widget.create_prepare_widget()
-        # self.prepare_widget.create_ip_list_button_widget()
-        # # self.prepare_widget.create_ip_list_show_widget()
-        # self.prepare_widget.check_workspace()
-        # # 创建场景设置部件
-        # self.monitor_operation_frame.create_scene_set_widget()
-        # self.monitor_operation_frame.create_monitor_operation_widget(self)
-        # # 创建结果展示部件
-        # self.execute_info_text.create_execution_info_widget()
+
+    def get_ip_info(self):
+        return self.main_frame.get_ip_info()
+
+    def get_workspace_path(self):
+        return self.main_frame.get_workspace_path()
 
     # 读取监控历史记录
     def read_monitor_history(self):
@@ -166,26 +150,26 @@ class Gui(tkinter.Tk):
 
     # 写入结果展示
     def set_res(self, res, tag=None):
-        self.execute_info_text.set_res(res, tag)
+        self.main_frame.set_monitor_log(res, tag)
 
     # 清空结果展示
     def del_res(self):
-        self.execute_info_text.del_res()
+        self.main_frame.delete_monitor_log()
 
     # 执行用户操作
     @syspathcheck
     @scene_check_not_null
     def execute_command(self, step, download_scene_info=None):
         self.del_res()
-        run_scene_info = self.monitor_operation_frame.get_scene_info()
-        result_save_path = self.prepare_widget.get_iplist_path()
+        run_scene_info = self.main_frame.get_scene_info()
+        result_save_path = self.main_frame.get_workspace_path()
         step_route = StepRoute(gui_obj, result_save_path, step, run_scene_info, download_scene_info)
         MyThread(step_route.execute, (), step).start()
 
 
 if __name__ == '__main__':
     gui_obj = Gui()
-    gui_obj.creat_monitor_history_result_file()
+    gui_obj.create_monitor_history_result_file()
     gui_obj.style_init()
     gui_obj.create_frame()
     gui_obj.mainloop()
