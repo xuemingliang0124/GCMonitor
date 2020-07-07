@@ -1,45 +1,42 @@
-import configparser
-import sys
-from threading import Lock, current_thread
+import logging
+from threading import Lock
+import os
 import time
 
-sys.path.append('..')
-from publick_class.DeleteResult import *
-from publick_class.ip_list import IpList
+from global_var import MONITOR_RECORD
 from publick_class.threads_control import MyThread
-from jvm_monitor.init_environment import InitEnvironment
-from jvm_monitor.run_jvm_monitor import JvmMonitor
-from jvm_monitor.download_result import DownLoadResult
-from jvm_monitor.kill_monitor_process import KillJstat
-from jvm_monitor.parse_result import ParseResult
-from jvm_monitor.delete_result import DeleteResult
+from gc_monitor.init_environment import InitEnvironment
+from gc_monitor.run_jvm_monitor import JvmMonitor
+from gc_monitor.download_result import DownLoadResult
+from gc_monitor.kill_monitor_process import KillJstat
+from gc_monitor.parse_result import ParseResult
+from gc_monitor.delete_result import DeleteResult
 
-logger = logging.getLogger('XMON.Step_route')
+logger = logging.getLogger('GCMonitor.UI.StepRoute')
 
 
 class StepRoute():
-    def __init__(self, gui_obj, result_save_path, step, run_scene_info=None, download_scene_info=None):
+    def __init__(self, gui_obj, result_save_path, step, servers, run_scene_info=None,
+                 download_scene_info=None):
         self.root = gui_obj
         self.result_save_path = result_save_path
         self.step = step
+        self.servers = servers
         self.run_scene_info = run_scene_info
-        self.download_scene_info = download_scene_info
-        self.timestamp = time.localtime()
+        self.timestamp = time.strftime('%Y%m%d%H%M%S', time.localtime())
         self.lock = Lock()
-        self.servers = []
-        self.local_result_path = ''
-        self.result_name = ''
+        self.download_scene_info = download_scene_info
+        if download_scene_info:
+            scene_name = download_scene_info.get('scene_name')
+            scene_date = download_scene_info.get('scene_date')
+            self.result_name = '%s_%s' % (scene_name, scene_date)
+            self.local_result_path = os.path.join(self.result_save_path, 'test_result', self.result_name)
         self.kwargs = {'lock': self.lock, 'timestamp': self.timestamp, 'gui_obj': self.root,
                        'ResultSavePath': self.result_save_path, 'step_route': self}
 
     def execute(self):
-        run_object = self.get_step_object(self.step)
-        try:
-            self.servers = IpList(self.result_save_path, self.root).read_file()
-        except:
-            self.root.set_res('打开iplist失败！\n', 1)
-            return 0
-        self.root.set_res('执行中。。。\n')
+        run_object = self.get_step_object()
+        self.root.set_monitor_log('%s执行中。。。\n' % run_object.name)
         threads = []
         all_run_object = []
         for server in self.servers:
@@ -54,44 +51,37 @@ class StepRoute():
         self.tags = [i.tag for i in all_run_object]
         success = self.tags.count(1)
         failed = self.tags.count(0)
-        self.root.set_res('\n执行完成!\n')
-        self.root.set_res('\n共执行成功%s台，失败%s台\n\n\n' % (success, failed))
+        self.root.set_monitor_log(
+            '%s执行完成!\n共%s台服务器\n成功%s   失败%s\n' % (
+                run_object.name, len(self.tags), success, failed))
+        if self.step == 'InitEnv' and not failed:
+            self.root.set_project_status('1')
         if self.step == 'runJvmMonitor':
             self.write_monitor_scene_info()
-            self.root.read_monitor_history()
+            self.root.update_monitor_record()
+        if self.step == 'killJstat':
+            with open(MONITOR_RECORD, 'r', encoding='utf8') as f:
+                content = f.read()
+            content = content.replace('执行状态:0', '执行状态:2')
+            with open(MONITOR_RECORD, 'w', encoding='utf8') as f:
+                f.write(content)
+            self.root.update_monitor_record()
         if self.step == 'DownLoadResult':
             if failed:
-                self.root.set_res('\n监控结果下载异常，请检查！\n')
+                self.root.set_monitor_log('控结果下载异常，请检查！\n')
                 return
-            self.root.set_res('\n 下载完成，解析中。。。\n\n\n')
+            self.root.set_monitor_log('下载完成，解析中。。。\n')
             if self.local_result_path and self.result_name:
                 parse_thread = MyThread(ParseResult, (self.local_result_path, self.result_name, self.root),
                                         'ParseResult')
                 parse_thread.start()
                 parse_thread.join()
             else:
-                self.root.set_res('\n监控结果下载异常，请检查！\n')
+                self.root.set_monitor_log('监控结果下载异常，请检查！\n')
+        if self.step == 'DeleteResult':
+            self.root.set_project_status('0')
 
-    def exe_cls(self, server):
-
-        if 'DownLoad' in self.step:
-            var_str = 'self.CJ_name,server,self.scene_info,kwargs'
-        else:
-            var_str = 'server,self.scene_info,kwargs'
-        cmd = '%s(%s)' % (self.step, var_str)
-        exe_result = eval(cmd)
-        if exe_result.tag:
-            self.tags.append(1)
-        else:
-            self.tags.append(0)
-        if 'DownLoad' in self.step:
-            self.local_result_path = exe_result.local_result_path
-            self.result_name = exe_result.result_name[0]
-        if self.step == 'runJvmMonitor':
-            self.write_monitor_scene_info()
-            self.root.read_result()
-
-    def get_step_object(self, step):
+    def get_step_object(self):
         if self.step == 'runJvmMonitor':
             run_object = RunJvmMonitor
         elif self.step == 'DownLoadResult':
@@ -107,13 +97,13 @@ class StepRoute():
         return run_object
 
     def write_monitor_scene_info(self):
-        cf = configparser.ConfigParser()
-        cf.read('./Result_Monitor.conf')
-        times_all = time.strftime('%Y%m%d%H%M%S', self.timestamp)
-        times = time.strftime('%Y%m%d%H%M', self.timestamp)
-        cf.set('TITLE', '执行时间为：%s' % times_all, '场景名：%s' % self.run_scene_info['scene_name'])
-        with open('./Result_Monitor.conf', 'w') as f:
-            cf.write(f)
+        status = 0
+        if self.tags.count(0) > 0:
+            status = 3
+        monitor_record = "场景名称:%s | 执行时间:%s | 执行状态:%s | 监控时长:%s\n" % (
+            self.run_scene_info['scene_name'], self.timestamp, status, self.run_scene_info['scene_time'])
+        with open(MONITOR_RECORD, 'a', encoding="utf8") as f:
+            f.write(monitor_record)
 
     def set_local_result_path(self, local_result_path, result_name):
         self.local_result_path = local_result_path
@@ -137,12 +127,16 @@ class OperationBasic:
 
 
 class InitEnv(OperationBasic):
+    name = '初始化监控'
+
     def execute(self):
         execute = InitEnvironment(self.server, self.kwargs)
         self.set_tag(execute.tag)
 
 
 class RunJvmMonitor(OperationBasic):
+    name = '启动监控'
+
     def __init__(self, server, download_info, run_scene_info, kwargs):
         super().__init__(server, download_info, run_scene_info, kwargs)
         self.server = server
@@ -155,6 +149,8 @@ class RunJvmMonitor(OperationBasic):
 
 
 class RunDownloadResult(OperationBasic):
+    name = '下载监控结果'
+
     def __init__(self, server, download_info, run_scene_info, kwargs):
         super().__init__(server, download_info, run_scene_info, kwargs)
         self.download_scene_info = download_info
@@ -166,12 +162,16 @@ class RunDownloadResult(OperationBasic):
 
 
 class RunKillMonitor(OperationBasic):
+    name = '终止监控'
+
     def execute(self):
         execute = KillJstat(self.server, self.kwargs)
         self.set_tag(execute.tag)
 
 
 class JvmDeleteResult(OperationBasic):
+    name = '清理服务器'
+
     def execute(self):
         execute = DeleteResult(self.server, self.kwargs)
         self.set_tag(execute.tag)

@@ -35,7 +35,7 @@ class myTrans(object):
         self.__trans = trans
 
     #
-    def download(self, localpath, serverpath):
+    def download(self, localpath=None, serverpath=None):
         self.sftp = paramiko.SFTPClient.from_transport(self.__trans)
         self.sftp.get(serverpath, localpath)
         return 1

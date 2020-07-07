@@ -5,7 +5,7 @@ import paramiko
 
 from publick_class.service_connector import myTrans
 
-logger = logging.getLogger('XMON.Step_route.Execute')
+logger = logging.getLogger('GCMonitor.UI.StepRoute.Execute')
 
 
 class Execute(object):
@@ -14,8 +14,6 @@ class Execute(object):
         self.port = server['port']
         self.uname = server['uname']
         self.passwd = server['passwd']
-        self.israc = server['israc']
-        self.middleware = server['middle_ware_type']
         scene_info = scene_info
         if scene_info:
             self.scene_name = scene_info['scene_name']
@@ -39,11 +37,11 @@ class Execute(object):
             logger.debug('create channel finish')
         except paramiko.BadAuthenticationType:
             logger.error('connect to server fialed', exc_info=True)
-            self.gui_obj.set_res('%s\n连接服务器失败!请检查iplist中服务器帐号密码!\n' % self.ip, 1)
+            self.gui_obj.set_monitor_log('%s\n连接服务器失败!请检查iplist中服务器帐号密码!\n' % self.ip, 1)
             exit(0)
         except paramiko.SSHException:
             logger.error('connect to server fialed', exc_info=True)
-            self.gui_obj.set_res('%s\n连接服务器失败!请检查iplist中服务器地址和端口号!\n' % self.ip, 1)
+            self.gui_obj.set_monitor_log('%s\n连接服务器失败!请检查iplist中服务器地址和端口号!\n' % self.ip, 1)
             exit(0)
 
     def get_tag(self):
@@ -51,5 +49,3 @@ class Execute(object):
 
     def close_connect(self):
         self.server.exit()
-
-
