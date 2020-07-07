@@ -1,5 +1,5 @@
 import logging
-from publick_class import execute
+from public_class import execute
 from global_var import SERVER_WORK_FILENAME
 from decorators import output_log
 

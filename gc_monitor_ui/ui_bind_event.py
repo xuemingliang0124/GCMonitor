@@ -7,7 +7,7 @@ import time
 
 from gc_monitor_ui import jvm_main
 from gc_monitor.step_route import StepRoute
-from publick_class.threads_control import MyThread
+from public_class.threads_control import MyThread
 from gc_monitor_ui.standard_components import StardardQInputDialog
 from decorators import *
 

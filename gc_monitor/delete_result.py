@@ -1,6 +1,6 @@
 import logging
 
-from publick_class.execute import Execute
+from public_class.execute import Execute
 from global_var import SERVER_WORK_FILENAME
 from decorators import output_log
 

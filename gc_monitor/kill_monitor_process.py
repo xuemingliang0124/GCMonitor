@@ -2,7 +2,7 @@ import logging
 import sys
 
 sys.path.append('..')
-from publick_class.execute import Execute
+from public_class.execute import Execute
 from decorators import output_log
 
 logger = logging.getLogger('GCMonitor.UI.StepRoute.KillMonitor')

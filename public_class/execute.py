@@ -3,7 +3,7 @@ from sys import exit
 
 import paramiko
 
-from publick_class.service_connector import myTrans
+from public_class.service_connector import myTrans
 
 logger = logging.getLogger('GCMonitor.UI.StepRoute.Execute')
 

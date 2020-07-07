@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QMessageBox
 import re
 import sys
 
-from publick_class.threads_control import MyThread
+from public_class.threads_control import MyThread
 from decorators import output_log
 from gc_monitor_ui.standard_components import StandardMessageBox
 

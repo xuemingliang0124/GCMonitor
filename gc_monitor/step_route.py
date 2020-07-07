@@ -4,7 +4,7 @@ import os
 import time
 
 from global_var import MONITOR_RECORD
-from publick_class.threads_control import MyThread
+from public_class.threads_control import MyThread
 from gc_monitor.init_environment import InitEnvironment
 from gc_monitor.run_jvm_monitor import JvmMonitor
 from gc_monitor.download_result import DownLoadResult

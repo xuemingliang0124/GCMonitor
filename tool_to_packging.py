@@ -1,5 +1,5 @@
 import os
-from publick_class.src_to_exe_to_zip import Packaging
+from public_class.src_to_exe_to_zip import Packaging
 
 path = os.getcwd().split('\\jvm_monitor_git')[0]
 
