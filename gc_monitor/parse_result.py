@@ -2,13 +2,12 @@ import datetime
 import logging
 import os
 import pandas as pd
-from PyQt5.QtWidgets import QMessageBox
 import re
 import sys
+import time
 
 from public_class.threads_control import MyThread
 from decorators import output_log
-from gc_monitor_ui.standard_components import StandardMessageBox
 
 logger = logging.getLogger('GCMonitor.UI.StepRoute.ParseResult')
 
@@ -137,17 +136,25 @@ class ParseResult:
             logger.exception(sys.exc_info())
             self.root.set_monitor_log('%s已打开，请关闭重试！\n' % self.analysis_file_path, 1)
             return
-        os.remove('temp.csv')
-        question_str = "监控分析完成，是否打开？"
         try:
-            question_dialog = StandardMessageBox(self.root.MainWindow, '结果解析', question_str, '确认', '取消',
-                                                 QMessageBox.Question)
-            if question_dialog.clickedButton().text() == '确认':
-                MyThread(os.system, (self.analysis_file_path,), 'open analysis').start()
-                self.root.set_monitor_log('监控结果已打开，保存位置%s\n' % self.analysis_file_path)
-            else:
-                self.root.set_monitor_log('监控结果分析完成，保存位置%s\n' % self.analysis_file_path)
+            os.remove('temp.csv')
         except:
+            pass
+        # question_str = "监控分析完成，是否打开？"
+        try:
+            # self.app.setQuitOnLastWindowClosed(False)
+            # question_dialog = StandardMessageBox(None, '结果解析', question_str, '确认', '取消',
+            #                                      QMessageBox.Question, auto_show=False)
+            # question_dialog.show_dialog()
+            # if question_dialog.clickedButton().text() == '确认':
+            self.root.set_monitor_log('分析完成，正在打开分析结果。。。\n')
+            time.sleep(2)
+            MyThread(os.system, (self.analysis_file_path,), 'open analysis').start()
+            self.root.set_monitor_log('分析结果已打开，保存位置%s\n' % self.analysis_file_path)
+            # else:
+            #     self.root.set_monitor_log('监控结果分析完成，保存位置%s\n' % self.analysis_file_path)
+        except:
+            self.root.set_monitor_log('分析结果打开失败\n')
             logger.exception(sys.exc_info())
 
     @output_log("GetFilenameList", logger)
@@ -155,7 +162,8 @@ class ParseResult:
         self.analysis_file_path = os.path.join(self.local_result_path, 'GC_' + self.analysis_file_name + '.xlsx')
         self.analysis_file_path = self.analysis_file_path.replace('/', '\\')
         filename_list = os.listdir(self.local_result_path)
-        filename_list = filter(lambda x: x.endswith('.gc'), filename_list)
+        filename_list = list(filter(lambda x: x.endswith('.gc'), filename_list))
+        logger.debug('filename list:' + ','.join(filename_list))
         return filename_list
 
     @output_log("CreateChart", logger)
@@ -178,7 +186,9 @@ class ParseResult:
             })
         chart.set_x_axis({'name': '执行时间：%s' % monitor_start_time})
         chart.set_y_axis({'name': '内存百分比（%）', 'major_girdlines': {'visible': False}, 'max': 100})
-        chart.set_title({"name": "%s_%s" % (service_ip, process_id)})
+        chart_name = service_ip + '_' + process_id
+        chart.set_title({"name": "%s" % (chart_name)})
         chart.width = 13 * 60
         chart.height = 20 * 24
         worksheet.insert_chart('H2:T25', chart)
+        logger.debug('chart for %s finished' % chart_name)

@@ -6,23 +6,14 @@ import zipfile
 
 class Packaging:
     @staticmethod
-    def src_to_exe(work_path, dist_path, command: str, python_path=r'C:\Python36-32'):
-        # env = os.environ['path']
-        # temp = env.split(';')
-        # env_list = temp[:]
-        # for i, env_value in enumerate(temp):
-        #     if 'python' in env_value.lower():
-        #         env_list.remove(env_value)
-        # env_list.append(python_path)
-        # env_list.append(os.path.join(python_path, 'Scripts'))
-        # env_list.append(os.path.join(python_path, 'lib\site-packages\pywin32_system32'))
-        # os.environ['path'] = ';'.join(env_list)
+    def src_to_exe(work_path, dist_path, command: str):
         if os.path.exists(dist_path):
             shutil.rmtree(dist_path)
             time.sleep(2)
             os.makedirs(work_path)
             os.chdir(work_path)
-        os.popen(command)
+        pack = os.popen(command)
+        pack.read()
 
     @staticmethod
     def exe_to_zip(path, zip_name):

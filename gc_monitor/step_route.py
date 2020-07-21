@@ -70,7 +70,7 @@ class StepRoute():
             if failed:
                 self.root.set_monitor_log('控结果下载异常，请检查！\n')
                 return
-            self.root.set_monitor_log('下载完成，解析中。。。\n')
+            self.root.set_monitor_log('下载完成，分析结果中，请稍候。。。\n')
             if self.local_result_path and self.result_name:
                 parse_thread = MyThread(ParseResult, (self.local_result_path, self.result_name, self.root),
                                         'ParseResult')

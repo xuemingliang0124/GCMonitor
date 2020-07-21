@@ -69,10 +69,11 @@ class JvmMonitor(Execute):
         self.server.exec_cmd(check_monitor_process_command)
         logger.debug("up monitor process\n" + self.server.result)
         # 监控进程数
-        all_monitor_process_id_list = self.server.result.strip().split('\n')[1:]
+        all_monitor_process_id_list = self.server.result.strip().split()[1:]
         all_monitor_process_id_list = [x.strip() for x in all_monitor_process_id_list]
-        # 监控进程数与Java进程数相同，则启动监控成功，否则启动失败
-        if set(monitor_process_id_list) <= set(all_monitor_process_id_list):
+        # 监控进程数与Java进程数相同，且所有监控进程正在运行，则启动监控成功，否则启动失败
+        if len(java_process_id_list) <= len(monitor_process_id_list) and \
+                set(monitor_process_id_list) <= set(all_monitor_process_id_list):
             show_monitor_process_info_command = ['ps -ef |grep jstat|grep -v \'grep\'\n']
             self.server.exec_cmd(show_monitor_process_info_command)
             with self.lock:
@@ -80,5 +81,6 @@ class JvmMonitor(Execute):
             self.tag = 1
         else:
             with self.lock:
-                self.root.set_monitor_log('%s\nGC监控启动失败！\n%s\n' % (self.ip, self.server.result), 1)
+                self.root.set_monitor_log('%s\nGC监控启动失败！当前Java进程数%s，当前监控进程数%s\n%s\n' % (
+                    self.ip, len(java_process_id_list), len(all_monitor_process_id_list), self.server.result), 1)
         self.server.exit()

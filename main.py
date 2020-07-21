@@ -14,7 +14,6 @@ ui.setupUi(MainWindow)
 ui.setupEvent(MainWindow)
 ui.setupPath()
 ui.update_monitor_record()
-
 MainWindow.show()
 sys.exit(app.exec_())
 

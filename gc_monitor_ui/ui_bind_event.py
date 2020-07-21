@@ -1,9 +1,4 @@
-import configparser
-import logging
-import os
-from PyQt5 import QtWidgets, QtCore
-import re
-import time
+from PyQt5 import QtCore
 
 from gc_monitor_ui import jvm_main
 from gc_monitor.step_route import StepRoute
@@ -14,16 +9,20 @@ from decorators import *
 logger = logging.getLogger("GCMonitor.UI")
 
 
-class UIAfterBindEvent(jvm_main.Ui_MainWindow):
+class UIAfterBindEvent(jvm_main.Ui_GCMonitor):
     def __init__(self, MainWindow, app):
         super().__init__()
         self.MainWindow = MainWindow
         self.app = app
+        self.placeholder = "<font color=\"#cfcfcf\">" + "127.0.0.1:user:passwd" + "<font>"
 
     def setupEvent(self, MainWindow):
         self.hide_confirm_download_frame()
+        y = self.operation_subframe_3.y()
+        x = self.operation_subframe_3.x()
+        self.operation_subframe_3.move(x, y - 81)
         self.retranslateUi(MainWindow)
-        self.toolbtn_version.clicked.connect(self.show_version_dialog)
+        self.menu_version.triggered.connect(self.show_version_dialog)
         self.btn_workspace_scan.clicked.connect(self.ask_workspace_path)
         self.btn_services_info_scan.clicked.connect(self.ask_services_info_path)
         self.btn_init_env.clicked.connect(self.init_environment)
@@ -34,8 +33,12 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
         self.btn_confirm_download.clicked.connect(self.download_monitor_result)
         self.btn_cancel_download.clicked.connect(self.hide_confirm_download_frame)
         self.btn_clear_local_records.clicked.connect(self.clear_local_records)
+        self.btn_services_edit.clicked.connect(self.change_services_text_status)
         self.comb_scene_time.currentTextChanged.connect(self.set_scene_times)
         self.comb_scene_step.currentTextChanged.connect(self.set_scene_times)
+        self.text_services_info.setPlaceholderText("127.0.0.1:user:passwd")
+        self.comb_scene_time.setCurrentText("12小时")
+        self.comb_scene_step.setCurrentText("60秒")
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def setupPath(self):
@@ -55,6 +58,9 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
         if workspace_path:
             self.entry_workspace_path.setText(workspace_path)
             self.save_workspace_path(workspace_path)
+
+    def change_services_status(self):
+        pass
 
     def check_ip_list_path(self):
         if os.path.exists(CONFIG_FILE):
@@ -80,6 +86,7 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
             self.clear_projects_status()
             with open(MONITOR_RECORD, 'w', encoding='utf8') as f:
                 pass
+            self.update_monitor_record()
         else:
             self.set_monitor_log("操作取消！")
 
@@ -96,8 +103,8 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
             cf.add_section('PROJECTS')
             cf.set('PROJECTS', current_project, project_status)
         else:
-            cf.add_section('PROJECTS')
             cf.remove_section('PROJECTS')
+            cf.add_section('PROJECTS')
         with open(CONFIG_FILE, 'w', encoding='utf-8-sig') as f:
             cf.write(f)
 
@@ -123,9 +130,8 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
     @check_project_status
     @check_download_monitor_status
     def download_monitor_result(self):
-        download_combobox_selected_value = self.comb_monitor_history_list.currentText()
-        self.hide_confirm_download_frame()
-        scene_info_list = [x.strip() for x in download_combobox_selected_value.split('|')]
+        scene_info_str = self.get_download_scene_info()
+        scene_info_list = [x.strip() for x in scene_info_str.split('|')]
         scene_name, scene_date, status, scene_time = [x.split(':')[1] for x in scene_info_list]
         scene_info = {'scene_date': scene_date, 'scene_time': scene_time, 'scene_name': scene_name}
         step = 'DownLoadResult'
@@ -136,10 +142,10 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
     def execute_command(self, step, download_scene_info=None):
         # 隐藏下载子控件
         self.hide_confirm_download_frame()
-        # 清除执行日志
-        self.clear_monitor_log()
+        # # 清除执行日志
+        # self.clear_monitor_log()
         servers = self.format_services(self.text_services_info.toPlainText())
-        run_scene_info = self.get_scene_info()
+        run_scene_info = self.get_run_scene_info()
         result_save_path = self.entry_workspace_path.text()
         step_route = StepRoute(self, result_save_path, step, servers, run_scene_info, download_scene_info)
         MyThread(step_route.execute, (), step).start()
@@ -152,7 +158,17 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
             temp.append({"ip": server[0], "port": 22, "uname": server[1], "passwd": server[2]})
         return temp
 
-    def get_scene_info(self):
+    def get_download_scene_info(self) -> str:
+        download_combobox_selected_index = self.comb_monitor_history_list.currentIndex()
+        with open(MONITOR_RECORD, 'r', encoding='utf8') as f:
+            lines = f.readlines()
+        if len(lines)==0:
+            return '请选择监控结果:'
+        download_combobox_selected_index = len(lines) - download_combobox_selected_index - 1
+        scene_info_str = lines[download_combobox_selected_index]
+        return scene_info_str
+
+    def get_run_scene_info(self):
         return {'scene_name': self.entry_scene_name.text(),
                 'scene_step': int(self.comb_scene_step.currentText().strip('秒')),
                 'scene_times': int(self.lab_scene_times.text().strip('次')),
@@ -160,15 +176,7 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
 
     def hide_confirm_download_frame(self):
         self.confirm_download_frame.setVisible(False)
-        self.MainWindow.resize(1379, 842)
-        self.main_frame.resize(1379, 771)
-        self.main_set_frame.resize(691, 761)
-        self.centralwidget.resize(1379, 771)
-        self.operation_frame.resize(690, 151)
-        self.operation_log_frame.resize(690, 761)
-        self.operation_log_group_box.resize(690, 751)
-        self.text_operation_log.resize(680, 721)
-        self.operation_subframe_3.setGeometry(QtCore.QRect(10, 90, 671, 61))
+        self.operation_subframe_3.setVisible(True)
 
     def init_environment(self):
         step = 'InitEnv'
@@ -223,10 +231,13 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
         if tag:
             contents = content.split('\n')
             for line_content in contents:
-                self.text_operation_log.append("<font color=\"#FF0000\">" + line_content + '</font>')
+                self.text_operation_log.append("<p style=\" color:#ff5500;\">" + line_content + '</p>')
+                time.sleep(0.2)
         else:
             self.text_operation_log.append(content)
-        time.sleep(0.2)
+        self.cursor = self.text_operation_log.textCursor()
+        self.text_operation_log.moveCursor(self.cursor.End)
+
 
     def set_project_status(self, status='0'):
         project = self.entry_services_info_path.text().replace(":", "|")
@@ -238,15 +249,10 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
 
     def show_confirm_download_frame(self):
         self.confirm_download_frame.setVisible(True)
-        self.MainWindow.resize(1379, 932)
-        self.main_frame.resize(1379, 861)
-        self.main_set_frame.resize(691, 851)
-        self.centralwidget.resize(1379, 861)
-        self.operation_frame.resize(690, 241)
-        self.operation_log_frame.resize(690, 851)
-        self.operation_log_group_box.resize(690, 841)
-        self.text_operation_log.resize(680, 811)
-        self.operation_subframe_3.setGeometry(QtCore.QRect(10, 170, 671, 61))
+        self.operation_subframe_3.setVisible(False)
+        # y = self.operation_subframe_3.y()
+        # x = self.operation_subframe_3.x()
+        # self.operation_subframe_3.move(x, y + 81)
 
     def show_version_dialog(self):
         version_info = "版本：V1.0\n作者：薛明亮\n日期：2020/06/03"
@@ -260,11 +266,11 @@ class UIAfterBindEvent(jvm_main.Ui_MainWindow):
                 all_monitor_records = f.readlines()
             if all_monitor_records:
                 all_monitor_records.reverse()
-                if all_monitor_records:
-                    for index, monitor_record in enumerate(all_monitor_records):
-                        self.comb_monitor_history_list.addItem("")
-                        self.comb_monitor_history_list.setItemText(index, _translate("MainWindow", monitor_record))
-                    self.comb_monitor_history_list.setCurrentIndex(0)
-                    return True
+                all_monitor_records = ['|'.join(x.split("|")[:-1]).strip() for x in all_monitor_records]
+                for index, monitor_record in enumerate(all_monitor_records):
+                    self.comb_monitor_history_list.addItem("")
+                    self.comb_monitor_history_list.setItemText(index, _translate("MainWindow", monitor_record))
+                self.comb_monitor_history_list.setCurrentIndex(0)
+                return True
         self.comb_monitor_history_list.addItem("")
         self.comb_monitor_history_list.setItemText(0, _translate("MainWindow", "请选择监控结果:"))

@@ -69,9 +69,9 @@ def kill_monitor_confirm(func):
     @wraps(func)
     def wrapped_function(*args):
         cls = args[0]
-        kill_confirm = StandardMessageBox(cls.MainWindow, '警告！', '此操作将终止监控进程，操作不可逆！是否继续？', '是', '否',
+        kill_confirm = StandardMessageBox(cls.MainWindow, '警告！', '此操作将终止监控进程，操作不可逆！是否继续？', '确认', '取消',
                                           QtWidgets.QMessageBox.Question)
-        if kill_confirm.clickedButton().text() == '是':
+        if kill_confirm.clickedButton().text() == '确认':
             func(*args)
         else:
             cls.clear_monitor_log()
@@ -121,7 +121,7 @@ def check_download_monitor_status(func):
     @wraps(func)
     def wrapped_func(*args):
         cls = args[0]
-        download_monitor = cls.comb_monitor_history_list.currentText()
+        download_monitor = cls.get_download_scene_info()
         if download_monitor == '请选择监控结果:':
             return
         if '执行状态:0' in download_monitor:
@@ -134,8 +134,8 @@ def check_download_monitor_status(func):
                 seconds=int(scene_time))
             if end_time > now_time:
                 warn_info = '当前场景' + "<font color=\"red\">" + scene_name + "</font>" + '未结束，请等待场景结束或终止当前场景！'
-                StandardMessageBox(cls.MainWindow, '警告！', warn_info, '确认', '取消',
-                                   QtWidgets.QMessageBox.Question)
+                StandardMessageBox(cls.MainWindow, '警告！', warn_info, '确认',
+                                   type=QtWidgets.QMessageBox.Question)
                 return
         return func(cls)
 
@@ -171,7 +171,8 @@ def output_log(step: str, logger: logging.Logger):
                 return func(*args)
             except:
                 logger.exception(sys.exc_info())
-            logger.info("%s end" % step)
+            finally:
+                logger.info("%s end" % step)
             return True
 
         return wrapped_output_log
@@ -204,7 +205,7 @@ def check_scene_name(func):
     @wraps(func)
     def wrapped_check_scene_name(*args):
         cls = args[0]
-        scene_info = cls.get_scene_info()
+        scene_info = cls.get_run_scene_info()
         scene_name = scene_info.get("scene_name")
         if not scene_name:
             StandardMessageBox(cls.MainWindow, '场景名称错误!错误！', '场景名称不能为空！', '确认')

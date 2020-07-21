@@ -1,8 +1,8 @@
 import logging
+import paramiko
 from sys import exit
 
-import paramiko
-
+from decorators import output_log
 from public_class.service_connector import myTrans
 
 logger = logging.getLogger('GCMonitor.UI.StepRoute.Execute')
@@ -30,11 +30,12 @@ class Execute(object):
         self.tag = 0
         self._connect()
 
+    @output_log('Connect Server', logger)
     def _connect(self):
         try:
             self.server = myTrans(self.ip, self.port, self.uname, self.passwd)
             self.server.create_chan()
-            logger.debug('create channel finish')
+            logger.debug('connected to %s' % self.ip)
         except paramiko.BadAuthenticationType:
             logger.error('connect to server fialed', exc_info=True)
             self.gui_obj.set_monitor_log('%s\n连接服务器失败!请检查iplist中服务器帐号密码!\n' % self.ip, 1)

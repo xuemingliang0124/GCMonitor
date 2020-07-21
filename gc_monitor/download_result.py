@@ -83,9 +83,9 @@ class DownLoadResult(Execute):
                 with self.lock:
                     self.root.set_monitor_log('%s\n下载失败\n%s' % (file, e))
         with self.lock:
-            self.root.set_monitor_log('%s\n' % self.ip)
+            self.root.set_monitor_log('%s' % self.ip)
             for i in self.result_name:
-                self.root.set_monitor_log('%s\n' % i)
-                self.root.set_monitor_log('下载完成\n')
+                self.root.set_monitor_log('%s' % i)
+                self.root.set_monitor_log('下载完成')
         self.tag = 1
         self.server.exit()
