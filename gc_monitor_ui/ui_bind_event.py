@@ -59,8 +59,15 @@ class UIAfterBindEvent(jvm_main.Ui_GCMonitor):
             self.entry_workspace_path.setText(workspace_path)
             self.save_workspace_path(workspace_path)
 
-    def change_services_status(self):
-        pass
+    @check_services_filepath
+    def change_services_text_status(self, *args):
+        status = self.btn_services_edit.text()
+        if status == '编辑':
+            self.text_services_info.setEnabled(True)
+            self.btn_services_edit.setText('保存')
+        elif status == '保存':
+            self.text_services_info.setEnabled(False)
+            self.btn_services_edit.setText('编辑')
 
     def check_ip_list_path(self):
         if os.path.exists(CONFIG_FILE):
@@ -162,7 +169,7 @@ class UIAfterBindEvent(jvm_main.Ui_GCMonitor):
         download_combobox_selected_index = self.comb_monitor_history_list.currentIndex()
         with open(MONITOR_RECORD, 'r', encoding='utf8') as f:
             lines = f.readlines()
-        if len(lines)==0:
+        if len(lines) == 0:
             return '请选择监控结果:'
         download_combobox_selected_index = len(lines) - download_combobox_selected_index - 1
         scene_info_str = lines[download_combobox_selected_index]
@@ -237,7 +244,6 @@ class UIAfterBindEvent(jvm_main.Ui_GCMonitor):
             self.text_operation_log.append(content)
         self.cursor = self.text_operation_log.textCursor()
         self.text_operation_log.moveCursor(self.cursor.End)
-
 
     def set_project_status(self, status='0'):
         project = self.entry_services_info_path.text().replace(":", "|")

@@ -224,3 +224,20 @@ def check_scene_name(func):
         return func(*args)
 
     return wrapped_check_scene_name
+
+
+def check_services_filepath(func):
+    @wraps(func)
+    def wrapped_check_services_fielpath(*args):
+        cls = args[0]
+        path = cls.entry_services_info_path.text()
+        if path:
+            if os.path.exists(path):
+                return func(*args)
+            else:
+                with open(path, 'w', encoding='utf8') as f:
+                    pass
+        else:
+            StandardMessageBox(cls.MainWindow, '警告', '请先设置服务器列表文件路径！')
+
+    return wrapped_check_services_fielpath

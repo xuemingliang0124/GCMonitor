@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets
 
 
 class StandardMessageBox(QtWidgets.QMessageBox):
-    def __init__(self, parent: QtWidgets, title: str, content: str, button_1='', button_2='',
+    def __init__(self, parent: QtWidgets, title: str, content: str, button_1='确认', button_2='',
                  type=QtWidgets.QMessageBox.Warning, auto_show=True):
         super().__init__(parent)
         self.setStyleSheet("font: 10pt \"微软雅黑\";")
